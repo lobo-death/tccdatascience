@@ -1,0 +1,14 @@
+beautifulsoup4==4.8.2
+bs4==0.0.1
+certifi==2019.11.28
+chardet==3.0.4
+environs==7.2.0
+idna==2.8
+marshmallow==3.4.0
+pydub==0.23.1
+python-dotenv==0.11.0
+requests==2.22.0
+soupsieve==1.9.5
+SpeechRecognition==3.8.1
+telegram==0.0.1
+urllib3==1.25.8
