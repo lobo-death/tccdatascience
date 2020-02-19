@@ -3,6 +3,7 @@
 import os
 from pydub import AudioSegment as audioSegment
 import speech_recognition as sr
+import unidecode
 
 SOURCE_PATH = "./audio/ogg/"
 DESTINATION_PATH = "./audio/mp3/"
@@ -17,16 +18,12 @@ def trimAudioFiles(audio_file, decibeis =- 50, chunk = 10):
     return silent_miliseconds
 
 def convertOggFilesToFormat(filename, file, formatName, exportPath):
+    if not os.path.exists(exportPath):
+        os.mkdir(exportPath)
     ogg = audioSegment.from_file(file=file, format="ogg")
     destinationFilename = filename[:-4] + "." + formatName
     ogg.export(exportPath + destinationFilename, format=formatName)
     return exportPath + destinationFilename
-
-if not os.path.exists(DESTINATION_PATH):
-    os.mkdir(DESTINATION_PATH)
-
-if not os.path.exists(TEMP_WAV_PATH):
-    os.mkdir(TEMP_WAV_PATH)
 
 
 files = os.listdir(SOURCE_PATH)
@@ -42,14 +39,15 @@ for file in files:
 
         try:
             soundRecognized = recognizer.recognize_google(audio, language="pt-BR")
-            convertOggFilesToFormat(soundRecognized + "_" + filename, sourceOggFile, "mp3", DESTINATION_PATH)
+            mp3AudioDirectory = DESTINATION_PATH + unidecode.unidecode(soundRecognized).upper() + "/"
+            convertOggFilesToFormat(unidecode.unidecode(soundRecognized) + "_" + filename,
+                                    sourceOggFile, "mp3", mp3AudioDirectory)
             print(filename + " identificado como " + soundRecognized)
 
         except sr.UnknownValueError:
-            print("Google nao identificou o audio")
+            print(filename + " Google nao identificou o audio")
         except sr.RequestError as e:
-            print("Problemas na chamada ao serviço {0}".format(e))
-
+            print(filename + " Problemas na chamada ao serviço {0}".format(e))
 
 
 print("Todos os arquivos processados!")
