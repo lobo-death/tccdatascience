@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 from pydub import AudioSegment as audioSegment
 import speech_recognition as sr
