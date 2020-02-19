@@ -1,0 +1,18 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+environs = "==7.2.0"
+requests = "*"
+bs4 = "*"
+beautifulsoup4 = "*"
+telegram = "*"
+pydub = "*"
+speechrecognition = "*"
+
+[requires]
+python_version = "3.7"
