@@ -10,10 +10,11 @@ environs = "==7.2.0"
 requests = "*"
 bs4 = "*"
 beautifulsoup4 = "*"
-telegram = "*"
 pydub = "*"
 speechrecognition = "*"
 unidecode = "*"
+fuzzywuzzy = "*"
+python-telegram-bot = "*"
 
 [requires]
 python_version = "3.7"

@@ -4,6 +4,9 @@ import os
 from pydub import AudioSegment as audioSegment
 import speech_recognition as sr
 import unidecode
+from fuzzywuzzy import process
+
+strOptions = ["bovinos".upper(), "suinos".upper(), "aves".upper(), "info".upper(), "sugestoes".upper(), "encerrar".upper()]
 
 SOURCE_PATH = "./audio/ogg/"
 DESTINATION_PATH = "./audio/mp3/"
@@ -31,23 +34,33 @@ files = os.listdir(SOURCE_PATH)
 for file in files:
     filename = file
     sourceOggFile = SOURCE_PATH + file
-    sourceWavFile = convertOggFilesToFormat(filename, sourceOggFile, "wav", TEMP_WAV_PATH)
+    try:
+        sourceWavFile = convertOggFilesToFormat(filename, sourceOggFile, "wav", TEMP_WAV_PATH)
 
-    recognizer = sr.Recognizer()
-    with sr.AudioFile(sourceWavFile) as source:
-        audio = recognizer.record(source)  # read the entire audio file
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(sourceWavFile) as source:
+            audio = recognizer.record(source)  # read the entire audio file
 
-        try:
-            soundRecognized = recognizer.recognize_google(audio, language="pt-BR")
-            mp3AudioDirectory = DESTINATION_PATH + unidecode.unidecode(soundRecognized).upper() + "/"
-            convertOggFilesToFormat(unidecode.unidecode(soundRecognized) + "_" + filename,
-                                    sourceOggFile, "mp3", mp3AudioDirectory)
-            print(filename + " identificado como " + soundRecognized)
+            try:
+                soundRecognized = recognizer.recognize_google(audio, language="pt-BR")
+                ratios = process.extract(unidecode.unidecode(soundRecognized).upper(), strOptions)
+                highest = process.extractOne(unidecode.unidecode(soundRecognized).upper(), strOptions)
+                mp3AudioDirectory = DESTINATION_PATH + unidecode.unidecode(highest[0]).upper() + "/"
+                convertOggFilesToFormat(unidecode.unidecode(soundRecognized).upper() + "_" + highest[0] + "_" + filename,
+                                        sourceOggFile, "mp3", mp3AudioDirectory)
+                print(filename + " identificado como " + soundRecognized + " - sondex: " + highest[0])
 
-        except sr.UnknownValueError:
-            print(filename + " Google nao identificou o audio")
-        except sr.RequestError as e:
-            print(filename + " Problemas na chamada ao serviço {0}".format(e))
+            except sr.UnknownValueError:
+                print(filename + " Google nao identificou o audio")
+                mp3AudioDirectory = DESTINATION_PATH + unidecode.unidecode("UNKNOWN").upper() + "/"
+                convertOggFilesToFormat("UNKNOWN_" + filename,
+                                        sourceOggFile, "mp3", mp3AudioDirectory)
+            except sr.RequestError as e:
+                print(filename + " Problemas na chamada ao serviço {0}".format(e))
+
+    except:
+        print("Não foi possivel converter o arquivo: " + sourceOggFile)
+
 
 
 print("Todos os arquivos processados!")
