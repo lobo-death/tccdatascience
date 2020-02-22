@@ -1,0 +1,12 @@
+Criar um projeto do zero no BotFather
+Mudar o nome de Chatoscana para outro contexto
+Mudar a mensagem de boas vindas e gerar o audio
+Mudar os botões da caixa de texto para a tela
+A lista de tipos de carne com preços gerar audio
+Criar as classes e metodos para o fluxo de reconhecimento e respostas
+Criar um audio para "não entendi" ou "pode repetir por favor"
+Implentar um audio para quando for encerrar
+Incluir cadastro no inicio da execução 
+Implementar bando de dados postgres
+
+
