@@ -44,10 +44,10 @@ engine.say("O que vai levar? ")
 engine.say("Você escolheu sugestões")
 engine.save_to_file(
     text="Vocë escolheu bovinos! Essas são as promoções que temos para hoje.",
-    filename="./textToSpeak.out")
+    filename="./textToSpeak3.out")
 engine.runAndWait()
 engine.stop()
 
 # convert raw audio format to mp3
-AudioSegment.from_file("./textToSpeak.out").export('converted.mp3', format="mp3")
+AudioSegment.from_file("./textToSpeak3.out").export('./converted2.mp3', format="mp3")
 

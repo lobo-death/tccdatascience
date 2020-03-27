@@ -8,9 +8,9 @@ from fuzzywuzzy import process
 
 strOptions = ["bovinos".upper(), "suinos".upper(), "aves".upper(), "info".upper(), "sugestoes".upper(), "encerrar".upper()]
 
-SOURCE_PATH = "./audio/ogg/"
-DESTINATION_PATH = "./audio/mp3/"
-TEMP_WAV_PATH = "./audio/wav/"
+SOURCE_PATH = "../audio/ogg/"
+DESTINATION_PATH = "../audio/mp3/"
+TEMP_WAV_PATH = "../audio/wav/"
 
 
 def trimAudioFiles(audio_file, decibeis =- 50, chunk = 10):

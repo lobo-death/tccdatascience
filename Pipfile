@@ -15,6 +15,10 @@ speechrecognition = "*"
 unidecode = "*"
 fuzzywuzzy = "*"
 python-telegram-bot = "*"
+djangorestframework = "*"
+markdown = "*"
+telebot = "*"
+pytelegrambotapi = "*"
 
 [requires]
 python_version = "3.7"
