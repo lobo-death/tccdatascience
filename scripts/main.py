@@ -3,7 +3,7 @@ import os
 
 from telegram import ParseMode, ChatAction
 from telegram.ext import Updater, MessageHandler, Filters, CommandHandler
-import speechToText as sTT
+from scripts import speechToText as sTT
 
 TELEGRAM_TOKEN = "SEU_TELEGRAM_TOKEN"
 BING_TOKEN = "SEU_BING_SPEECH_TOKEN"

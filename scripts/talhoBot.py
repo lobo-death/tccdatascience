@@ -9,18 +9,20 @@ import telebot
 from environs import Env
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# import environment variables
 from scripts.classes.Choice import Choice
 from scripts.classes.text_to_speak import TextToSpeak
+from scripts.classes.options_menu import options_bovino, options_aves, options_suinos
 
+# import environment variables
 env = Env()
 env.read_env()
 
 telegram_token = env("TELEGRAM_TOKEN_API")
 download_path = env("DOWNLOAD_PATH")
 bot_name = "Talho"
-message_step_one = "O que vai querer?"
+message_step_one = "O que vai querer? (Escolha a opção ou digite pelo código)"
 cart = []
+current_interaction = None
 
 # logging configuration
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -37,6 +39,7 @@ def main_option_keyboard_markup(chat_id):
         InlineKeyboardButton("Aves", callback_data=json.dumps({"step": "main", "option": "AVES", "id": chat_id})),
         InlineKeyboardButton("Bovinos", callback_data=json.dumps({"step": "main", "option": "BOVINOS", "id": chat_id})),
         InlineKeyboardButton("Suínos", callback_data=json.dumps({"step": "main", "option": "SUINOS", "id": chat_id})),
+        InlineKeyboardButton("Sugestões", callback_data=json.dumps({"step": "main", "option": "SUGESTOES", "id": chat_id})),
         InlineKeyboardButton("Info", callback_data=json.dumps({"step": "main", "option": "INFO", "id": chat_id})),
         InlineKeyboardButton("Encerrar", callback_data=json.dumps({"step": "main", "option": "ENCERRAR", "id": chat_id}))
     )
@@ -47,29 +50,42 @@ def main_option_keyboard_markup(chat_id):
 def message_start(message):
     welcome(message)
 
+
 @bot.message_handler(func=lambda message: True)
 def message_handler(message):
-    welcome(message)
+    if current_interaction is None:
+        welcome(message)
+    else:
+        log.warning("repass to handle for current interation {0} ...". format(current_interaction))
+        interaction_handle(message, current_interaction)
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     choice = json.loads(call.data)
+    global current_interaction
+    current_interaction = choice
+    interaction_handle(call, choice)
+
+
+def interaction_handle(call, choice):
     if choice["step"] == "main":
         if choice["option"] == "AVES":
-            bot.answer_callback_query(call.id, call.data)
-            aves_menu(choice)
+            # bot.answer_callback_query(call.id, call.data)
+            create_submenu(message_step_one, choice, options_aves, "aves")
         elif choice["option"] == "BOVINOS":
-            bovinos_menu(choice)
+            create_submenu(message_step_one, choice, options_bovino, "bovinos")
         elif choice["option"] == "SUINOS":
-            suinos_menu(choice)
+            create_submenu(message_step_one, choice, options_suinos, "suinos")
         elif choice["option"] == "SUGESTOES":
             sugestoes_menu(choice)
         elif choice["option"] == "INFO":
             info_menu(choice)
-        else: #encerrar
-            bot.answer_callback_query(call.id, call.data)
+        else:  # encerrar
+            encerrar_menu(choice)
     elif choice["step"] == "aves":
+        message = call.json
+        log.warning(message["text"])
         pass
     elif choice["step"] == "bovinos":
         pass
@@ -103,19 +119,11 @@ def handle_docs_audio(message):
         log.error("Error in handle_docs_audio {0}".format(inst.args))
 
 
-def aves_menu(choice):
-    log.info("MESSAGE: " + str(choice))
-    bot.send_message(choice["id"], message_step_one, reply_markup=aves_option_menu_markup(choice["id"]))
-
-
-def bovinos_menu(choice):
-    log.info(choice)
-    bot.send_message(choice["id"], message_step_one, reply_markup=bovinos_option_menu_markup(choice["id"]))
-
-
-def suinos_menu(choice):
-    log.info(choice)
-    bot.send_message(choice["id"], message_step_one, reply_markup=suinos_option_menu_markup(choice["id"]))
+def create_submenu(message, choice, options, step_name):
+    log.info("creating submenu: " + str(choice))
+    bot.send_message(choice["id"],
+                     message,
+                     reply_markup=create_option_menu_markup(choice["id"], options, step_name))
 
 
 def info_menu(choice):
@@ -128,113 +136,39 @@ def sugestoes_menu(choice):
 
 def fechar_menu(choice):
     bot.send_message(choice["id"], "Pedido enviado!")
+    cart = []
 
 
 def encerrar_menu(choice):
     bot.send_message(choice["id"], "Volte sempre!")
+    cart = []
+
 
 def quantidade(choice):
     bot.send_message(choice["id"], "Digite a quantidade que deseja:")
 
-def aves_option_menu_markup(chat_id):
-    print("markup aves")
-    markup = InlineKeyboardMarkup(row_width=1)
-    markup.add(
-        InlineKeyboardButton("1 - Peito .......... por R$ 16,99",
-                             callback_data=json.dumps({"step": "aves", "option": "peito", "id": chat_id})),
-        InlineKeyboardButton("2 - Tulipinha .... por R$ 22,99",
-                             callback_data=json.dumps({"step": "aves", "option": "tulipinha", "id": chat_id})),
-        InlineKeyboardButton("3 - Coxa .......... por R$ 19,99",
-                             callback_data=json.dumps({"step": "aves", "option": "coxa", "id": chat_id})),
-        InlineKeyboardButton("4 - Coração ..... por R$12,99",
-                             callback_data=json.dumps({"step": "aves", "option": "coracao", "id": chat_id})),
-        InlineKeyboardButton("5 - Voltar",
-                             callback_data=json.dumps({"step": "aves", "option": "voltar", "id": chat_id}))
-    )
-    return markup
 
+def create_option_menu_markup(chat_id, options, step_name):
+    log.info("creating {0} menu markup ...".format(step_name))
+    global current_interaction
 
-def meeat_option_menu_markup(chat_id, options, step):
     markup = InlineKeyboardMarkup(row_width=1)
     for option in options:
-        step = {"step": step, "option": option['opcao'], "id": chat_id}
-        if option["codigo"] == "-1":
-            markup.add(
-                InlineKeyboardButton(
-                    "Voltar",
-                    callback_data=json.dumps(step))
-            )
-        else:
-            markup.add(
-                InlineKeyboardButton(
-                    "{0} - {1} .......... por R$ {2}".format(option["codigo"], option["descricao"], option["preco"]),
-                    callback_data=json.dumps(step))
-            )
-    return markup
-
-def bovinos_option_menu_markup(chat_id):
-    print("bovinos menu ...")
-    options = [
-        {
-            'codigo': "1",
-            'descricao': 'Maminha Angus',
-            'preco': 'R$45,99',
-            'opcao': 'maminha'
-        },
-        {
-            'codigo': "2",
-            'descricao': 'Picanha Argentina Angus',
-            'preco': 'R$79,99',
-            'opcao': 'picánha'
-        },
-        {
-            'codigo': "3",
-            'descricao': 'Chorizo Angus',
-            'preco': 'R$52,99',
-            'opcao': 'chorizo'
-        },
-        {
-            'codigo': "4",
-            'descricao': 'Entrecôt Angus',
-            'preco': 'R$59,99',
-            'opcao': 'entrecot'
-        },
-        {
-            'codigo': "-1",
-            'descricao': 'Voltar',
-            'preco': 'R$59,99',
-            'opcao': 'entrecot'
-        }
-    ]
-    markup = InlineKeyboardMarkup(row_width=1)
-    for option in options:
-        step = {"step": "bovinos", "option": option['opcao'], "id": chat_id}
-        if option["codigo"] == "-1":
-            markup.add(
-                InlineKeyboardButton(
-                    "Voltar",
-                    callback_data=json.dumps(step))
-            )
-        else:
-            markup.add(
-                InlineKeyboardButton("{0} - {1} .......... por R$ {2}".format(option["codigo"], option["descricao"], option["preco"]), callback_data=json.dumps(step))
-            )
-    return markup
-
-
-def suinos_option_menu_markup(chat_id):
-    markup = InlineKeyboardMarkup(row_width=1).add(
-        InlineKeyboardButton("1 - Peito .......... por R$ 16,99",
-                             callback_data=json.dumps({"step": "aves", "option": "peito", "id": chat_id})),
-        InlineKeyboardButton("2 - Tulipinha .... por R$ 22,99",
-                             callback_data=json.dumps({"step": "aves", "option": "tulipinha", "id": chat_id})),
-        InlineKeyboardButton("3 - Coxa .......... por R$ 19,99",
-                             callback_data=json.dumps({"step": "aves", "option": "coxa", "id": chat_id})),
-        InlineKeyboardButton("4 - Coração ..... por R$12,99",
-                             callback_data=json.dumps({"step": "aves", "option": "coracao", "id": chat_id})),
-        InlineKeyboardButton("5 - Voltar",
-                             callback_data=json.dumps({"step": "aves", "option": "voltar", "id": chat_id}))
-    )
+        if option["type"] == "instructions":
+            bot.send_message(chat_id, option["text"])
+        elif option["type"] in ("item", "action"):
+            step = {"step": step_name, "option": option['option'], "id": chat_id}
+            if option["code"] == "-1":
+                markup.add(
+                    InlineKeyboardButton(
+                        option["description"],
+                        callback_data=json.dumps(step))
+                )
+            else:
+                markup.add(
+                    InlineKeyboardButton("{0} - {1} - R$ {2}".format(option["code"], option["description"], option["price"]), callback_data=json.dumps(step))
+                )
+    current_interaction = {"step": step_name, "option": "INITIAL", "id": chat_id}
     return markup
 
 
@@ -246,7 +180,7 @@ def welcome(message):
     user_message = "Olá {user_name}".format(user_name=message.from_user.first_name)
     bot.send_message(chat_id, user_message)
     welcome_message = "Meu nome é {bot}, serei seu assistente virtual." \
-                      ";;O quê deseja pedir?".format(bot=bot_name)
+                      "O quê deseja pedir?".format(bot=bot_name)
 
     speak = TextToSpeak()
     speak.set_voice(speak.get_available_voice())
