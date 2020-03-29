@@ -8,6 +8,7 @@ import json
 import telebot
 from environs import Env
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot import types
 
 from scripts.classes.Choice import Choice
 from scripts.classes.text_to_speak import TextToSpeak
@@ -69,6 +70,7 @@ def callback_query(call):
 
 
 def interaction_handle(call, choice):
+    global current_interaction
     if choice["step"] == "main":
         if choice["option"] == "AVES":
             # bot.answer_callback_query(call.id, call.data)
@@ -83,17 +85,28 @@ def interaction_handle(call, choice):
             info_menu(choice)
         else:  # encerrar
             encerrar_menu(choice)
-    elif choice["step"] == "aves":
-        message = call.json
-        log.warning(message["text"])
-        pass
-    elif choice["step"] == "bovinos":
-        pass
-    elif choice["step"] == "suinos":
-        pass
+    elif choice["step"] in ("aves", "bovinos", "suinos"):
+        if choice["option"] == "INITIAL":
+            message = call.json
+            log.warning(message["text"])
+        elif choice["option"] == "QTDE":
+            log.info("Qtde digitada: {0}".format(call.json["text"]))
+            pass
+        else: # handle for submenu
+            current_interaction = {"step": choice["step"], "option": "QTDE", "id": choice["id"]}
+            markup = types.ForceReply(selective=False)
+            bot.send_message(choice["id"], "Digite a quantidade em kg:", reply_markup=markup)
+
     else:
         print("no step configured ....")
 
+
+
+
+@bot.message_handler(func=lambda message: True, content_types=['text'])
+def command_default(m):
+    # this is the standard reply to a normal message
+    bot.send_message(m.chat.id, "I don't understand \"" + m.text + "\"\nMaybe try the help page at /help")
 
 @bot.message_handler(content_types=['document', 'audio', 'voice'])
 def handle_docs_audio(message):
