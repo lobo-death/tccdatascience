@@ -10,6 +10,8 @@ from environs import Env
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from telebot import types
 
+import boto3
+
 from scripts.classes.Choice import Choice
 from scripts.classes.text_to_speak import TextToSpeak
 from scripts.classes.options_menu import options_bovino, options_aves, options_suinos
@@ -20,8 +22,10 @@ env.read_env()
 
 telegram_token = env("TELEGRAM_TOKEN_API")
 download_path = env("DOWNLOAD_PATH")
+polly_access_key = env("POLLY_ACCESS_KEY")
+polly_secret_key = env("POLLY_SECRET_KEY")
 bot_name = "Talho"
-message_step_one = "O que vai querer? (Escolha a opção ou digite pelo código)"
+message_step_one = "O que vai querer? (Clique na opção)"
 cart = []
 current_interaction = None
 
@@ -47,6 +51,16 @@ def main_option_keyboard_markup(chat_id):
     return markup
 
 
+def finalize_or_continue_keyboard_markup(choice):
+    markup = InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        InlineKeyboardButton("Continuar comprando",
+                             callback_data=json.dumps({"step": "main", "option": "INITIAL", "id": choice["id"]})),
+        InlineKeyboardButton("Finalizar",
+                             callback_data=json.dumps({"step": "main", "option": "FINALIZE", "id": choice["id"]}))
+    )
+    return markup
+
 @bot.message_handler(commands=['start', 'help'])
 def message_start(message):
     welcome(message)
@@ -57,7 +71,7 @@ def message_handler(message):
     if current_interaction is None:
         welcome(message)
     else:
-        log.warning("repass to handle for current interation {0} ...". format(current_interaction))
+        log.warning("repass to handle for current interaction {0} ...". format(current_interaction))
         interaction_handle(message, current_interaction)
 
 
@@ -83,6 +97,10 @@ def interaction_handle(call, choice):
             sugestoes_menu(choice)
         elif choice["option"] == "INFO":
             info_menu(choice)
+        elif choice["option"] == "INITIAL":
+            main_menu(choice)
+        elif choice["option"] == "FINALIZE":
+            fechar_menu(choice)
         else:  # encerrar
             encerrar_menu(choice)
     elif choice["step"] in ("aves", "bovinos", "suinos"):
@@ -90,10 +108,16 @@ def interaction_handle(call, choice):
             message = call.json
             log.warning(message["text"])
         elif choice["option"] == "QTDE":
-            log.info("Qtde digitada: {0}".format(call.json["text"]))
-            pass
+            log.info(choice)
+            log.info("Qtde digitada: {0} - ".format(call.json["text"]))
+            # save qtde and selected_product in cart
+
+            # return to main menu or finalize
+            bot.send_message(choice["id"], "Produto adicionado!", reply_markup=finalize_or_continue_keyboard_markup(choice))
+
         else: # handle for submenu
-            current_interaction = {"step": choice["step"], "option": "QTDE", "id": choice["id"]}
+            log.error(choice)
+            current_interaction = {"step": choice["step"], "option": "QTDE", "id": choice["id"], "selected_product:": choice["option"]}
             markup = types.ForceReply(selective=False)
             bot.send_message(choice["id"], "Digite a quantidade em kg:", reply_markup=markup)
 
@@ -101,12 +125,11 @@ def interaction_handle(call, choice):
         print("no step configured ....")
 
 
-
-
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def command_default(m):
     # this is the standard reply to a normal message
     bot.send_message(m.chat.id, "I don't understand \"" + m.text + "\"\nMaybe try the help page at /help")
+
 
 @bot.message_handler(content_types=['document', 'audio', 'voice'])
 def handle_docs_audio(message):
@@ -140,25 +163,99 @@ def create_submenu(message, choice, options, step_name):
 
 
 def info_menu(choice):
-    bot.send_message(choice["id"], "Horário de funcionamente: ")
+    bot.send_message(choice["id"], "Horário de funcionamente: Seg a Sex. 8:00 às 18:00 ")
+    polly_client = boto3.Session(
+        aws_access_key_id=polly_access_key,
+        aws_secret_access_key=polly_secret_key,
+        region_name='us-west-2').client('polly')
+
+    ssml =  """
+            <speak>
+                <p>Horário de funcionamente: Segunda a Sexta das 8:00 às 18:00 </p>                         
+             </speak> """
+
+    response = polly_client.synthesize_speech(VoiceId='Vitoria',
+                                              OutputFormat='ogg_vorbis',
+                                              LanguageCode='pt-BR',
+                                              TextType='ssml',
+                                              Text=ssml)
+
+    audio = response['AudioStream'].read()
+    bot.send_chat_action(choice["id"], "record_audio")
+    bot.send_voice(choice["id"], audio)
 
 
 def sugestoes_menu(choice):
     bot.send_message(choice["id"], "Escreva aqui suas sugestões!")
+    polly_client = boto3.Session(
+        aws_access_key_id=polly_access_key,
+        aws_secret_access_key=polly_secret_key,
+        region_name='us-west-2').client('polly')
+
+    ssml = """
+                <speak>
+                    <p>Escreva aqui suas sugestões</p>                         
+                 </speak> """
+
+    response = polly_client.synthesize_speech(VoiceId='Vitoria',
+                                              OutputFormat='ogg_vorbis',
+                                              LanguageCode='pt-BR',
+                                              TextType='ssml',
+                                              Text=ssml)
+
+    audio = response['AudioStream'].read()
+    bot.send_chat_action(choice["id"], "record_audio")
+    bot.send_voice(choice["id"], audio)
 
 
 def fechar_menu(choice):
     bot.send_message(choice["id"], "Pedido enviado!")
+    polly_client = boto3.Session(
+        aws_access_key_id=polly_access_key,
+        aws_secret_access_key=polly_secret_key,
+        region_name='us-west-2').client('polly')
+
+    ssml = """
+                <speak>
+                    <p>Pedido enviado.</p>                         
+                 </speak> """
+
+    response = polly_client.synthesize_speech(VoiceId='Vitoria',
+                                              OutputFormat='ogg_vorbis',
+                                              LanguageCode='pt-BR',
+                                              TextType='ssml',
+                                              Text=ssml)
+
+    audio = response['AudioStream'].read()
+    bot.send_chat_action(choice["id"], "record_audio")
+    bot.send_voice(choice["id"], audio)
     cart = []
+    choice = None
+    bot.send
 
 
 def encerrar_menu(choice):
     bot.send_message(choice["id"], "Volte sempre!")
+    polly_client = boto3.Session(
+        aws_access_key_id=polly_access_key,
+        aws_secret_access_key=polly_secret_key,
+        region_name='us-west-2').client('polly')
+
+    ssml = """
+                <speak>
+                    <p>Volte sempre!</p>                         
+                 </speak> """
+
+    response = polly_client.synthesize_speech(VoiceId='Vitoria',
+                                              OutputFormat='ogg_vorbis',
+                                              LanguageCode='pt-BR',
+                                              TextType='ssml',
+                                              Text=ssml)
+
+    audio = response['AudioStream'].read()
+    bot.send_chat_action(choice["id"], "record_audio")
+    bot.send_voice(choice["id"], audio)
     cart = []
-
-
-def quantidade(choice):
-    bot.send_message(choice["id"], "Digite a quantidade que deseja:")
 
 
 def create_option_menu_markup(chat_id, options, step_name):
@@ -169,8 +266,24 @@ def create_option_menu_markup(chat_id, options, step_name):
     for option in options:
         if option["type"] == "instructions":
             bot.send_message(chat_id, option["text"])
+            polly_client = boto3.Session(
+                aws_access_key_id=polly_access_key,
+                aws_secret_access_key=polly_secret_key,
+                region_name='us-west-2').client('polly')
+
+            response = polly_client.synthesize_speech(VoiceId='Vitoria',
+                                                      OutputFormat='ogg_vorbis',
+                                                      LanguageCode='pt-BR',
+                                                      TextType='ssml',
+                                                      Text=option['ssml'])
+
+            audio = response['AudioStream'].read()
+            bot.send_chat_action(chat_id, "record_audio")
+            bot.send_voice(chat_id, audio)
         elif option["type"] in ("item", "action"):
-            step = {"step": step_name, "option": option['option'], "id": chat_id}
+            log.info("@@@@@ aqui ...")
+            log.info(option)
+            step = {"step": step_name, "option": option['code'], "id": chat_id}
             if option["code"] == "-1":
                 markup.add(
                     InlineKeyboardButton(
@@ -195,13 +308,68 @@ def welcome(message):
     welcome_message = "Meu nome é {bot}, serei seu assistente virtual." \
                       "O quê deseja pedir?".format(bot=bot_name)
 
-    speak = TextToSpeak()
-    speak.set_voice(speak.get_available_voice())
-    converted_audio = speak.save_voice_to_file(welcome_message, "./audio.out", "./audio.ogg", "ogg")
+    welcome_message_ssml = """
+                                <speak>
+                                    <p>Olá {user_name}! Meu nome é {bot}, serei sua assistente virtual!</p>
+                                    <p>Fale um dos itens abaixo ou clique no botão referente a sua escolha.</p>
+                                    <p>Aves</p>
+                                    <p>Bovinos</p>
+                                    <p>Suínos</p>
+                                    <p>Sugestões</p>
+                                    <p>Info</p>
+                                    <p>Encerrar</p>
+                                               
+                                 </speak>
+                           """.format(user_name=message.from_user.first_name, bot=bot_name)
 
+    polly_client = boto3.Session(
+        aws_access_key_id=polly_access_key,
+        aws_secret_access_key=polly_secret_key,
+        region_name='us-west-2').client('polly')
+
+    response = polly_client.synthesize_speech(VoiceId='Vitoria',
+                                              OutputFormat='ogg_vorbis',
+                                              LanguageCode='pt-BR',
+                                              TextType='ssml',
+                                              Text=welcome_message_ssml)
+
+    audio = response['AudioStream'].read()
     bot.send_chat_action(chat_id, "record_audio")
-    bot.send_voice(chat_id, open(converted_audio, "rb"))
+    bot.send_voice(chat_id, audio)
     bot.send_message(chat_id, welcome_message, reply_markup=main_option_keyboard_markup(chat_id))
 
 
+def main_menu(choice):
+    chat_id = choice["id"]
+    welcome_message_ssml = """
+                                    <speak>
+                                        <p>Fale um dos itens abaixo ou clique no botão referente a sua escolha.</p>
+                                        <p>Aves</p>
+                                        <p>Bovinos</p>
+                                        <p>Suínos</p>
+                                        <p>Sugestões</p>
+                                        <p>Info</p>
+                                        <p>Encerrar</p>
+
+                                     </speak>
+                               """
+
+    polly_client = boto3.Session(
+        aws_access_key_id=polly_access_key,
+        aws_secret_access_key=polly_secret_key,
+        region_name='us-west-2').client('polly')
+
+    response = polly_client.synthesize_speech(VoiceId='Vitoria',
+                                              OutputFormat='ogg_vorbis',
+                                              LanguageCode='pt-BR',
+                                              TextType='ssml',
+                                              Text=welcome_message_ssml)
+
+    audio = response['AudioStream'].read()
+    bot.send_chat_action(chat_id, "record_audio")
+    bot.send_voice(chat_id, audio)
+    bot.send_message(chat_id, "", reply_markup=main_option_keyboard_markup(chat_id))
+
+
 bot.polling(none_stop=True, interval=0, timeout=60)
+
