@@ -268,3 +268,5 @@ pip-selfcheck.json
 /audio/
 /scripts/download_files/
 /scripts/*.ogg
+/scripts/
+/audio/mp3/
