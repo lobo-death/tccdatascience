@@ -209,7 +209,7 @@ def sugestoes_menu(choice):
 
 
 def fechar_menu(choice):
-    bot.send_message(choice["id"], "Pedido enviado!")
+    bot.send_message(choice["id"], "Pedido confirmado, ele será enviado assim que for processado.\n Volte sempre!")
     polly_client = boto3.Session(
         aws_access_key_id=polly_access_key,
         aws_secret_access_key=polly_secret_key,
@@ -217,7 +217,8 @@ def fechar_menu(choice):
 
     ssml = """
                 <speak>
-                    <p>Pedido enviado.</p>                         
+                    <p>Pedido confirmado, ele será enviado assim que for processado.</p>      
+                    <p>Obrigado pela preferência. Volte sempre!</p>                       
                  </speak> """
 
     response = polly_client.synthesize_speech(VoiceId='Vitoria',
@@ -281,8 +282,6 @@ def create_option_menu_markup(chat_id, options, step_name):
             bot.send_chat_action(chat_id, "record_audio")
             bot.send_voice(chat_id, audio)
         elif option["type"] in ("item", "action"):
-            log.info("@@@@@ aqui ...")
-            log.info(option)
             step = {"step": step_name, "option": option['code'], "id": chat_id}
             if option["code"] == "-1":
                 markup.add(
@@ -368,7 +367,8 @@ def main_menu(choice):
     audio = response['AudioStream'].read()
     bot.send_chat_action(chat_id, "record_audio")
     bot.send_voice(chat_id, audio)
-    bot.send_message(chat_id, "", reply_markup=main_option_keyboard_markup(chat_id))
+    message = "Selecione ou fale uma das opções abaixo:"
+    bot.send_message(chat_id, message , reply_markup=main_option_keyboard_markup(chat_id))
 
 
 bot.polling(none_stop=True, interval=0, timeout=60)

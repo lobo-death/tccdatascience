@@ -71,28 +71,28 @@ options_aves = [
     },
     {
         'type': "item",
-        'code': "1",
+        'code': "5",
         'description': 'Peito',
         'price': '16,99',
         'option': 'peito'
     },
     {
         'type': "item",
-        'code': "2",
+        'code': "6",
         'description': 'Tulipinha',
         'price': '22,99',
         'option': 'tulipinha'
     },
     {
         'type': "item",
-        'code': "3",
+        'code': "7",
         'description': 'Coxa',
         'price': '19,99',
         'option': 'coxa'
     },
     {
         'type': "item",
-        'code': "4",
+        'code': "8",
         'description': 'Coração',
         'price': '12,99',
         'option': 'coracao'
@@ -123,21 +123,21 @@ options_suinos = [
     },
     {
         'type': "item",
-        'code': "1",
+        'code': "9",
         'description': 'Lombinho',
         'price': '13,99',
         'option': 'lombinho'
     },
     {
         'type': "item",
-        'code': "2",
+        'code': "10",
         'description': 'Panceta',
         'price': '10,99',
         'option': 'panceta'
     },
     {
         'type': "item",
-        'code': "3",
+        'code': "11",
         'description': 'Linguiça Toscana',
         'price': '9,99',
         'option': 'linguica'
