@@ -165,8 +165,7 @@ def command_default(m):
 @bot.message_handler(content_types=['document', 'audio', 'voice'])
 def handle_docs_audio(message):
     try:
-        log.warning(message)
-
+        global current_interaction
         if (message.content_type == 'voice') or (message.content_type == 'audio'):
             log.warning(message.voice)
             file_id = message.voice.file_id
@@ -185,6 +184,9 @@ def handle_docs_audio(message):
             identified_voice = recognizer.sound_recognizer(file, filename)
 
             bot.send_message(message.chat.id, "Você falou a opção: {opcao}".format(opcao=identified_voice))
+            choice = {"step": "main", "option": identified_voice.upper(), "id": message.chat.id}
+            current_interaction = choice
+            interaction_handle(message, choice)
     except Exception as inst:
         log.error("Error in handle_docs_audio {0}".format(inst))
 
