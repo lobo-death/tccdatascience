@@ -13,12 +13,11 @@ from telebot import types
 import boto3
 from scripts.classes.options_menu import options_bovino, options_aves, options_suinos
 
-# import environment variables
 from scripts.models.ProductRepository import ProductRepository
 from scripts.models.PurchaseRepository import PurchaseRepository
 from scripts.models.UserRepository import UserRepository
 
-
+# import environment variables
 env = Env()
 env.read_env()
 
@@ -26,10 +25,12 @@ telegram_token = env("TELEGRAM_TOKEN_API")
 download_path = env("DOWNLOAD_PATH")
 polly_access_key = env("POLLY_ACCESS_KEY")
 polly_secret_key = env("POLLY_SECRET_KEY")
+
 bot_name = "Talho"
 message_step_one = "O que vai querer? (Clique na opção)"
 cart = []
 current_interaction = None
+current_purchase = None
 
 polly_client = boto3.Session(
     aws_access_key_id=polly_access_key,
@@ -101,7 +102,7 @@ def callback_query(call):
 
 
 def interaction_handle(call, choice):
-    global current_interaction
+    global current_interaction, current_purchase
     if choice["step"] == "main":
         if choice["option"] == "AVES":
             # bot.answer_callback_query(call.id, call.data)
@@ -127,20 +128,26 @@ def interaction_handle(call, choice):
         elif choice["option"] == "QTDE":
             log.info(choice)
             log.info("Qtde digitada: {0} - ".format(call.json["text"]))
+
             # save qtde and selected_product in cart
+            product_id = choice.get('selected_product')
+            qtde = call.json["text"]
+            product = ProductRepository.find_by_id(product_id)
+            purchase_item = {'purchase': current_purchase, 'product': product, 'qt': qtde}
+            PurchaseRepository.insert_itens(purchase_item)
 
             # return to main menu or finalize
             bot.send_message(choice["id"], "Produto adicionado!",
                              reply_markup=finalize_or_continue_keyboard_markup(choice))
         elif choice["option"] == "-1":
             current_interaction = {"step": "main", "option": "main", "id": choice["id"],
-                                   "selected_product:": choice["option"]}
+                                   "selected_product": choice["option"]}
             main_menu(choice)
 
         else:  # handle for submenu
             log.error(choice)
             current_interaction = {"step": choice["step"], "option": "QTDE", "id": choice["id"],
-                                   "selected_product:": choice["option"]}
+                                   "selected_product": choice["option"]}
             markup = types.ForceReply(selective=False)
             bot.send_message(choice["id"], "Digite a quantidade em kg:", reply_markup=markup)
 
@@ -313,6 +320,7 @@ def create_option_menu_markup(chat_id, options, step_name):
 
 
 def welcome(message):
+    global current_purchase
     log.debug(message)
     chat_id = message.chat.id
     log.info(message.from_user)
@@ -363,6 +371,9 @@ def welcome(message):
                                  </speak>
                            """.format(user_name=message.from_user.first_name, bot=bot_name)
 
+    # create a new purchase for current user
+    purchase = {"user": current_user}
+    current_purchase = PurchaseRepository.find_by_id(PurchaseRepository.create(purchase))
 
 
     response = polly_client.synthesize_speech(VoiceId='Vitoria',

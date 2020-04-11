@@ -9,12 +9,11 @@ class PurchaseRepository:
 
     @staticmethod
     def create(purchase):
-        return Purchase.insert(purchase)
+        return Purchase.insert(purchase).execute()
 
     @staticmethod
-    def insert_itens(itens):
-        for item in itens:
-            Items.insert(item)
+    def insert_itens(item):
+        Items.insert(item).execute()
 
     @staticmethod
     def get_purchase(id):
