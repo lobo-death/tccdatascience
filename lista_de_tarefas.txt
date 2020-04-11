@@ -9,4 +9,7 @@ Implentar um audio para quando for encerrar
 Incluir cadastro no inicio da execução 
 Implementar bando de dados postgres
 
+[Reunião do dia 21]
+
+
 

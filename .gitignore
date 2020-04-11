@@ -265,3 +265,7 @@ venv.bak/
 pip-selfcheck.json
 
 # End of https://www.gitignore.io/api/python,pycharm,virtualenv,pycharm+all
+/audio/
+/scripts/download_files/
+/scripts/*.ogg
+/audio/mp3/
