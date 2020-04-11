@@ -9,7 +9,7 @@ db = PostgresqlDatabase(
 
 
 class User(Model):
-    id = AutoField()
+    id = IntegerField(primary_key=True)
     name = CharField(max_length=125)
     street = CharField(max_length=255)
 
@@ -30,7 +30,7 @@ class Product(Model):
 
 class Purchase(Model):
     id = AutoField()
-    user_id = ForeignKeyField(User)
+    user = ForeignKeyField(User)
 
     class Meta:
         database = db
@@ -39,8 +39,8 @@ class Purchase(Model):
 
 class Items(Model):
     id = AutoField()
-    purchase_id = ForeignKeyField(Purchase)
-    product_id = ForeignKeyField(Product)
+    purchase = ForeignKeyField(Purchase)
+    product = ForeignKeyField(Product)
     qt = DoubleField()
 
     class Meta:
@@ -57,18 +57,36 @@ if __name__ == "__main__":
 
     try:
         Product.create_table()
+
+        data_source = [
+            {'id': 1, 'name': 'Maminha Angus', 'price': 45.99},
+            {'id': 2, 'name': 'Picanha Argentina Angus', 'price': 79.99},
+            {'id': 3, 'name': 'Chorizo Angus', 'price': 52.99},
+            {'id': 4, 'name': 'Entrecôt Angus', 'price': 59.99},
+            {'id': 5, 'name': 'Peito', 'price': 16.99},
+            {'id': 6, 'name': 'Tulipinha', 'price': 22.99},
+            {'id': 7, 'name': 'Coxa', 'price': 19.99},
+            {'id': 8, 'name': 'Coração', 'price': 12.99},
+            {'id': 9, 'name': 'Lombinho', 'price': 13.99},
+            {'id': 10, 'name': 'Panceta', 'price': 10.99},
+            {'id': 11, 'name': 'Linguiça Toscana', 'price': 9.99}
+
+        ]
+
+        for data_dict in data_source:
+            Product.create(**data_dict)
+
+        print("All tables created and initials data inserted!")
+
     except OperationalError:
-        print
-        "Product table already exists!"
+        print("Product table already exists!")
 
     try:
         Purchase.create_table()
     except OperationalError:
-        print
-        "Purchase table already exists!"
+        print("Purchase table already exists!")
 
     try:
         Items.create_table()
     except OperationalError:
-        print
-        "Items table already exists!"
+        print("Items table already exists!")
