@@ -5,11 +5,16 @@ from environs import Env
 env = Env()
 env.read_env()
 
+postgres_database = env("POSTGRES_DATABASE")
+postgres_user = env("POSTGRES_USER")
+postgres_password = env("POSTGRES_PASSWORD")
+postgres_host = env("POSTGRES_HOST")
+
 db = PostgresqlDatabase(
-    'bot',
-    user='root',
-    password='root',
-    host='localhost')
+    postgres_database,
+    user=postgres_user,
+    password=postgres_password,
+    host=postgres_host)
 
 
 class User(Model):
