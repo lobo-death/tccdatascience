@@ -114,11 +114,11 @@ options_suinos = [
                                 <speak>
                                     <p>Você escolheu suínos. Veja o que temos disponível.</p>
                                     <p>Lombinho</p>
-                                    <p>13,99</p>
+                                    <p>R$ 13,99</p>
                                     <p>Panceta</p>
-                                    <p>10,99</p>
+                                    <p>R$ 10,99</p>
                                     <p>Linguiça Toscana</p>
-                                    <p>9,99</p>                  
+                                    <p>R$ 9,99</p>                  
                                  </speak> """
     },
     {
