@@ -10,8 +10,10 @@ strOptions = ["bovinos".upper(), "suinos".upper(), "aves".upper(), "info".upper(
 
 SOURCE_PATH = "../audio/ogg/"
 DESTINATION_PATH = "../audio/mp3/"
-TEMP_WAV_PATH = "../audio/wav/"
+DESTINATION_WAV_PATH = "../audio/wav/"
+TEMP_WAV_PATH = "../audio/temp/"
 
+print("path: {0}".format(os.path.abspath(SOURCE_PATH)))
 
 def trimAudioFiles(audio_file, decibeis =- 50, chunk = 10):
     silent_miliseconds = 0
@@ -46,15 +48,22 @@ for file in files:
                 ratios = process.extract(unidecode.unidecode(soundRecognized).upper(), strOptions)
                 highest = process.extractOne(unidecode.unidecode(soundRecognized).upper(), strOptions)
                 mp3AudioDirectory = DESTINATION_PATH + unidecode.unidecode(highest[0]).upper() + "/"
+                wavAudioDirectory = DESTINATION_WAV_PATH + unidecode.unidecode(highest[0]).upper() + "/"
                 convertOggFilesToFormat(unidecode.unidecode(soundRecognized).upper() + "_" + highest[0] + "_" + filename,
                                         sourceOggFile, "mp3", mp3AudioDirectory)
+                convertOggFilesToFormat(
+                    unidecode.unidecode(soundRecognized).upper() + "_" + highest[0] + "_" + filename,
+                    sourceOggFile, "wav", wavAudioDirectory)
                 print(filename + " identificado como " + soundRecognized + " - sondex: " + highest[0])
 
             except sr.UnknownValueError:
                 print(filename + " Google nao identificou o audio")
                 mp3AudioDirectory = DESTINATION_PATH + unidecode.unidecode("UNKNOWN").upper() + "/"
+                wavAudioDirectory = DESTINATION_WAV_PATH + unidecode.unidecode("UNKNOWN").upper() + "/"
                 convertOggFilesToFormat("UNKNOWN_" + filename,
                                         sourceOggFile, "mp3", mp3AudioDirectory)
+                convertOggFilesToFormat("UNKNOWN_" + filename,
+                                        sourceOggFile, "wav", wavAudioDirectory)
             except sr.RequestError as e:
                 print(filename + " Problemas na chamada ao serviço {0}".format(e))
 
