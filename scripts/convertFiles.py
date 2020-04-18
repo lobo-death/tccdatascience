@@ -15,6 +15,7 @@ TEMP_WAV_PATH = "../audio/temp/"
 
 print("path: {0}".format(os.path.abspath(SOURCE_PATH)))
 
+
 def trimAudioFiles(audio_file, decibeis =- 50, chunk = 10):
     silent_miliseconds = 0
     while audio_file[silent_miliseconds : silent_miliseconds + chunk].dBFS < decibeis:
@@ -22,12 +23,17 @@ def trimAudioFiles(audio_file, decibeis =- 50, chunk = 10):
 
     return silent_miliseconds
 
+
 def convertOggFilesToFormat(filename, file, formatName, exportPath):
     if not os.path.exists(exportPath):
         os.mkdir(exportPath)
     ogg = audioSegment.from_file(file=file, format="ogg")
     destinationFilename = filename[:-4] + "." + formatName
-    ogg.export(exportPath + destinationFilename, format=formatName)
+
+    if formatName == "wav":
+        ogg.export(exportPath + destinationFilename, format=formatName, codec="pcm_s16le", bitrate="16000")
+    else:
+        ogg.export(exportPath + destinationFilename, format=formatName)
     return exportPath + destinationFilename
 
 
@@ -49,26 +55,27 @@ for file in files:
                 highest = process.extractOne(unidecode.unidecode(soundRecognized).upper(), strOptions)
                 mp3AudioDirectory = DESTINATION_PATH + unidecode.unidecode(highest[0]).upper() + "/"
                 wavAudioDirectory = DESTINATION_WAV_PATH + unidecode.unidecode(highest[0]).upper() + "/"
-                convertOggFilesToFormat(unidecode.unidecode(soundRecognized).upper() + "_" + highest[0] + "_" + filename,
-                                        sourceOggFile, "mp3", mp3AudioDirectory)
+                #convertOggFilesToFormat(unidecode.unidecode(soundRecognized).upper() + "_" + highest[0] + "_" + filename,
+                #                        sourceOggFile, "mp3", mp3AudioDirectory)
                 convertOggFilesToFormat(
                     unidecode.unidecode(soundRecognized).upper() + "_" + highest[0] + "_" + filename,
                     sourceOggFile, "wav", wavAudioDirectory)
+
                 print(filename + " identificado como " + soundRecognized + " - sondex: " + highest[0])
 
             except sr.UnknownValueError:
                 print(filename + " Google nao identificou o audio")
                 mp3AudioDirectory = DESTINATION_PATH + unidecode.unidecode("UNKNOWN").upper() + "/"
                 wavAudioDirectory = DESTINATION_WAV_PATH + unidecode.unidecode("UNKNOWN").upper() + "/"
-                convertOggFilesToFormat("UNKNOWN_" + filename,
-                                        sourceOggFile, "mp3", mp3AudioDirectory)
+                #convertOggFilesToFormat("UNKNOWN_" + filename,
+                #                        sourceOggFile, "mp3", mp3AudioDirectory)
                 convertOggFilesToFormat("UNKNOWN_" + filename,
                                         sourceOggFile, "wav", wavAudioDirectory)
             except sr.RequestError as e:
                 print(filename + " Problemas na chamada ao serviço {0}".format(e))
 
-    except:
-        print("Não foi possivel converter o arquivo: " + sourceOggFile)
+    except Exception as e:
+        print("Não foi possivel converter o arquivo: ")
 
 
 
