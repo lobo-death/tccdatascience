@@ -12,6 +12,7 @@ from telebot import types
 
 import boto3
 from scripts.classes.options_menu import options_bovino, options_aves, options_suinos
+from scripts.classes.speach_recognizer import Recognizer
 
 from scripts.models.ProductRepository import ProductRepository
 from scripts.models.PurchaseRepository import PurchaseRepository
@@ -137,7 +138,7 @@ def interaction_handle(call, choice):
             PurchaseRepository.insert_itens(purchase_item)
 
             # return to main menu or finalize
-            bot.send_message(choice["id"], "Produto adicionado!",
+            bot.send_message(choice["id"], "Produto {product_name} adicionado!".format(product_name=product.name),
                              reply_markup=finalize_or_continue_keyboard_markup(choice))
         elif choice["option"] == "-1":
             current_interaction = {"step": "main", "option": "main", "id": choice["id"],
@@ -164,25 +165,30 @@ def command_default(m):
 @bot.message_handler(content_types=['document', 'audio', 'voice'])
 def handle_docs_audio(message):
     try:
-        log.warning(message)
-
+        global current_interaction
         if (message.content_type == 'voice') or (message.content_type == 'audio'):
             log.warning(message.voice)
             file_id = message.voice.file_id
             file_info = bot.get_file(file_id)
-            bot.send_message(message.chat.id, file_info)
             downloaded_file = bot.download_file(file_info.file_path)
 
             if not os.path.exists(download_path):
                 os.mkdir(download_path)
 
             filename = "./" + download_path + "/audio_" + str(message.chat.id) + str(message.from_user.id) + ".ogg"
+            file = str(message.chat.id) + str(message.from_user.id) + ".ogg"
             with open(filename, 'wb') as new_file:
                 new_file.write(downloaded_file)
 
-            bot.send_message(message.chat.id, "Você enviou um áudio ou voz")
+            recognizer = Recognizer("pt-BR")
+            identified_voice = recognizer.sound_recognizer(file, filename)
+
+            bot.send_message(message.chat.id, "Você falou a opção: {opcao}".format(opcao=identified_voice))
+            choice = {"step": "main", "option": identified_voice.upper(), "id": message.chat.id}
+            current_interaction = choice
+            interaction_handle(message, choice)
     except Exception as inst:
-        log.error("Error in handle_docs_audio {0}".format(inst.args))
+        log.error("Error in handle_docs_audio {0}".format(inst))
 
 
 def create_submenu(message, choice, options, step_name):
@@ -236,9 +242,8 @@ def sugestoes_menu(choice):
 
 
 def fechar_menu(choice):
-    global current_interaction
+    global current_interaction, current_purchase
     bot.send_message(choice["id"], "Pedido confirmado, ele será enviado assim que for processado.\n Volte sempre!")
-
 
     ssml = """
                 <speak>
@@ -256,7 +261,6 @@ def fechar_menu(choice):
     bot.send_chat_action(choice["id"], "record_audio")
     bot.send_voice(choice["id"], audio)
     current_interaction = None
-    cart = []
     choice = None
 
 
